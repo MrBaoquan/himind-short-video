@@ -1,0 +1,24 @@
+[
+  {
+    "id": "tech-blue",
+    "version": "1.0.0",
+    "name": "科技蓝",
+    "description": "深色科技蓝底、青蓝强调和清晰数据层级，适合科技文旅与成果展示。",
+    "canvas": {"width": 1080, "height": 1920, "fps": 30},
+    "palette": {"background": "#09111f", "accent": "#4fc3f7", "text": "#eef5ff", "muted": "#9eb2cc"},
+    "typography": {"font_family": "Microsoft YaHei", "title_weight": 700, "title_size": 72, "body_size": 32},
+    "motion": {"entrance": "fade-up", "transition": "smooth", "duration_ms": 420},
+    "quality_rules": ["标题和字幕位于安全区内", "主色与背景对比度不低于 4.5:1", "数据变化使用短促但连续的动效"]
+  },
+  {
+    "id": "minimal-white",
+    "version": "1.0.0",
+    "name": "极简白",
+    "description": "明亮留白和低噪声排版，突出数据、图片与叙事内容。",
+    "canvas": {"width": 1080, "height": 1920, "fps": 30},
+    "palette": {"background": "#f7f9fc", "accent": "#1769aa", "text": "#10233d", "muted": "#60748e"},
+    "typography": {"font_family": "Microsoft YaHei", "title_weight": 700, "title_size": 72, "body_size": 32},
+    "motion": {"entrance": "fade", "transition": "dissolve", "duration_ms": 360},
+    "quality_rules": ["正文与背景有足够对比度", "保持四周留白", "单屏信息不超过三个重点"]
+  }
+]

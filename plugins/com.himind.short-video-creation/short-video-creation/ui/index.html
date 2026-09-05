@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>短视频项目</title>
+  <style>
+    :root { color-scheme: light; --bg:#f5f6f8; --surface:#fff; --line:#dfe3e8; --text:#17202b; --muted:#677383; --accent:#087ea4; --accent-strong:#056887; --success:#16794a; --warning:#a05a00; --danger:#ba2d2d; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-width:0; height:100vh; display:grid; grid-template-rows:auto minmax(0,1fr); background:var(--bg); color:var(--text); font:14px/1.45 "Microsoft YaHei",system-ui,sans-serif; }
+    button,input,select { font:inherit; }
+    button { min-height:32px; padding:0 12px; border:1px solid var(--line); border-radius:5px; background:var(--surface); color:var(--text); cursor:pointer; }
+    button:hover { border-color:#aab4c0; background:#f7f9fa; }
+    button:disabled { cursor:not-allowed; opacity:.48; }
+    button.primary { border-color:var(--accent); background:var(--accent); color:#fff; }
+    button.primary:hover { background:var(--accent-strong); }
+    input,select { width:100%; min-height:34px; border:1px solid var(--line); border-radius:5px; padding:0 10px; background:#fff; color:var(--text); outline:none; }
+    input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(8,126,164,.13); }
+    .topbar { min-height:62px; display:grid; grid-template-columns:minmax(150px,auto) minmax(220px,720px) auto; align-items:center; gap:16px; padding:10px 20px; border-bottom:1px solid var(--line); background:var(--surface); }
+    .brand strong { display:block; font-size:16px; }
+    .brand span { display:block; color:var(--muted); font-size:12px; }
+    .workspace { display:flex; gap:8px; justify-self:stretch; min-width:0; width:100%; }
+    .workspace input { min-width:0; }
+    .workspace button { flex:0 0 auto; min-width:56px; white-space:nowrap; }
+    .runtime { display:flex; align-items:center; gap:7px; white-space:nowrap; color:var(--muted); font-size:12px; }
+    .dot { width:8px; height:8px; border-radius:50%; background:#aab4c0; }
+    .dot.ready { background:var(--success); }
+    .shell { min-height:0; display:grid; grid-template-columns:310px minmax(0,1fr); }
+    aside { display:grid; grid-template-rows:auto minmax(0,1fr) auto; border-right:1px solid var(--line); background:var(--surface); min-width:0; }
+    .aside-head,.create { padding:14px; border-bottom:1px solid var(--line); }
+    .aside-head { display:flex; align-items:center; justify-content:space-between; }
+    .aside-head strong { font-size:13px; }
+    .count { color:var(--muted); font-size:12px; }
+    .project-list { overflow:auto; }
+    .project-item { width:100%; min-height:72px; padding:12px 14px; border:0; border-bottom:1px solid #edf0f2; border-radius:0; text-align:left; display:block; }
+    .project-item:hover { background:#f5f8f9; }
+    .project-item.active { background:#eaf4f7; box-shadow:inset 3px 0 var(--accent); }
+    .project-item strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .project-meta { display:flex; justify-content:space-between; gap:8px; margin-top:7px; color:var(--muted); font-size:12px; }
+    .create { border-top:1px solid var(--line); border-bottom:0; display:grid; gap:8px; }
+    .create summary { cursor:pointer; font-weight:600; }
+    .create-grid { margin-top:10px; display:grid; gap:8px; }
+    main { min-width:0; overflow:auto; }
+    .empty { min-height:100%; display:grid; place-items:center; color:var(--muted); text-align:center; }
+    .detail { min-height:100%; background:var(--surface); }
+    .detail-head { padding:22px 26px 18px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
+    h1 { margin:0; font-size:22px; letter-spacing:0; }
+    .sub { margin-top:6px; color:var(--muted); }
+    .actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+    .content { padding:22px 26px 30px; display:grid; gap:24px; }
+    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+    .summary div { padding:13px 15px; border-right:1px solid var(--line); min-width:0; }
+    .summary div:last-child { border-right:0; }
+    .summary span { display:block; color:var(--muted); font-size:12px; }
+    .summary strong { display:block; margin-top:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    section h2 { margin:0 0 10px; font-size:14px; }
+    .job { display:grid; grid-template-columns:110px minmax(0,1fr) 54px; gap:12px; align-items:center; padding:12px 0; border-top:1px solid var(--line); }
+    .job:first-of-type { border-top:0; }
+    .state { font-weight:600; }
+    .state.completed { color:var(--success); }
+    .state.failed,.state.cancelled { color:var(--danger); }
+    .state.preparing,.state.rendering,.state.queued,.state.waiting_adapter { color:var(--warning); }
+    .job-msg { color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .progress { height:5px; margin-top:6px; background:#e9edf0; overflow:hidden; }
+    .progress i { display:block; height:100%; background:var(--accent); }
+    .artifact { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:16px; padding:12px 0; border-top:1px solid var(--line); }
+    .artifact:first-of-type { border-top:0; }
+    .artifact strong,.artifact span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .artifact span { margin-top:3px; color:var(--muted); font-size:12px; }
+    .artifact-actions { display:flex; gap:7px; }
+    .notice { padding:10px 12px; border-left:3px solid var(--warning); background:#fff7e8; color:#764600; }
+    .error { border-left-color:var(--danger); background:#fff0f0; color:#8a2525; }
+    .busy { pointer-events:none; opacity:.65; }
+    @media (max-width:900px) {
+      .topbar { grid-template-columns:minmax(0,1fr) auto; gap:8px 14px; }
+      .workspace { grid-column:1/-1; grid-row:2; }
+      .shell { grid-template-columns:270px minmax(0,1fr); }
+      .detail-head { padding:18px 20px 16px; }
+      .content { padding:18px 20px 26px; }
+      .summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .summary div:nth-child(2) { border-right:0; }
+      .summary div:nth-child(-n+2) { border-bottom:1px solid var(--line); }
+    }
+    @media (max-width:640px) {
+      .topbar { padding:10px 14px; }
+      .shell { grid-template-columns:1fr; grid-template-rows:220px minmax(0,1fr); }
+      aside { border-right:0; border-bottom:1px solid var(--line); grid-template-columns:minmax(0,1fr) 220px; grid-template-rows:auto minmax(0,1fr); }
+      .aside-head { grid-column:1/-1; }
+      .project-list { grid-column:1; grid-row:2; }
+      .create { grid-column:2; grid-row:2; border-top:0; border-left:1px solid var(--line); overflow:auto; }
+      .detail-head { flex-direction:column; gap:14px; }
+      .actions { justify-content:flex-start; }
+      .artifact { grid-template-columns:1fr; gap:9px; }
+      .artifact-actions { justify-content:flex-start; }
+    }
+    @media (max-width:460px) {
+      .brand span { display:none; }
+      .runtime span { max-width:120px; overflow:hidden; text-overflow:ellipsis; }
+      .shell { grid-template-rows:300px minmax(0,1fr); }
+      aside { grid-template-columns:1fr; grid-template-rows:auto minmax(0,1fr) auto; }
+      .project-list { grid-column:1; grid-row:2; }
+      .create { grid-column:1; grid-row:3; border-left:0; border-top:1px solid var(--line); }
+      .summary { grid-template-columns:1fr; }
+      .summary div { border-right:0; border-bottom:1px solid var(--line); }
+      .summary div:last-child { border-bottom:0; }
+      .job { grid-template-columns:84px minmax(0,1fr) 42px; gap:8px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><strong>短视频项目</strong><span>模板创作与构建</span></div>
+    <div class="workspace"><input id="workspace" placeholder="短视频工作区绝对路径" aria-label="短视频工作区"><button id="load" class="primary">打开</button></div>
+    <div class="runtime"><i id="runtimeDot" class="dot"></i><span id="runtimeText">未检测</span></div>
+  </header>
+  <div class="shell">
+    <aside>
+      <div class="aside-head"><strong>项目</strong><span id="projectCount" class="count">0</span></div>
+      <div id="projectList" class="project-list"><div class="empty">输入工作区后打开</div></div>
+      <details class="create"><summary>新建项目</summary><div class="create-grid"><input id="newName" placeholder="项目名称"><select id="template"></select><select id="style"></select><button id="create" class="primary">创建</button></div></details>
+    </aside>
+    <main id="main"><div class="empty"><div><strong>选择一个短视频项目</strong><br>可查看 Recipe、预览、构建进度和产物</div></div></main>
+  </div>
+  <script>
+    const invoke = window.__TAURI__?.core?.invoke || window.__TAURI_INTERNALS__?.invoke;
+    const state = {workspace:localStorage.getItem('himind-short-video-workspace')||'', projects:[], selected:'', catalog:null, polling:null, busy:false};
+    const $ = id => document.getElementById(id);
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const call = async (id,input={}) => { if(!invoke) throw new Error('当前窗口无法调用插件能力'); return invoke('invoke_plugin_view_capability',{capabilityId:id,input}); };
+    const date = value => value ? new Date(value).toLocaleString('zh-CN',{hour12:false}) : '-';
+    const size = value => value > 1048576 ? (value/1048576).toFixed(1)+' MB' : Math.max(1,Math.round((value||0)/1024))+' KB';
+    const statusLabel = value => ({queued:'排队中',preparing:'准备中',rendering:'构建中',waiting_adapter:'等待引擎',completed:'已完成',failed:'失败',cancelled:'已取消'}[value]||value||'-');
+    function setBusy(value){ state.busy=value; document.body.classList.toggle('busy',value); }
+    function showError(error){ $('main').innerHTML='<div class="empty"><div class="notice error">'+esc(error?.message||error)+'</div></div>'; }
+    async function loadWorkspace(selectFirst=true){
+      const root=$('workspace').value.trim(); if(!root) return;
+      state.workspace=root; localStorage.setItem('himind-short-video-workspace',root); setBusy(true);
+      try{
+        const [projects,catalog,runtime]=await Promise.all([call('short.video.project.list',{workspace_root:root}),call('short.video.catalog.list',{}),call('short.video.runtime.status',{workspace_root:root})]);
+        state.projects=projects.items||[]; state.catalog=catalog; renderCatalog(); renderProjects(); renderRuntime(runtime);
+        if(selectFirst && state.projects.length && !state.projects.some(p=>p.id===state.selected)) state.selected=state.projects[0].id;
+        if(state.selected) await loadProject(state.selected); else renderEmpty();
+      }catch(error){showError(error)}finally{setBusy(false)}
+    }
+    function renderRuntime(result){ const renderer=(result.renderers||[])[0]||{}; const ready=renderer.state==='ready'||renderer.state==='available'; $('runtimeDot').className='dot '+(ready?'ready':''); $('runtimeText').textContent=renderer.state==='ready'?'Remotion 就绪':renderer.state==='available'?'Remotion 可用':'运行时缺失'; }
+    function renderCatalog(){ const templates=state.catalog?.templates||[],styles=state.catalog?.styles||[]; $('template').innerHTML=templates.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join(''); $('style').innerHTML=styles.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join(''); }
+    function renderProjects(){ $('projectCount').textContent=state.projects.length; $('projectList').innerHTML=state.projects.length?state.projects.map(p=>'<button class="project-item '+(p.id===state.selected?'active':'')+'" data-id="'+esc(p.id)+'"><strong>'+esc(p.name)+'</strong><div class="project-meta"><span>'+esc(p.template_id)+'</span><span>v'+esc(p.revision)+'</span></div></button>').join(''):'<div class="empty">暂无项目</div>'; document.querySelectorAll('.project-item').forEach(node=>node.addEventListener('click',()=>loadProject(node.dataset.id))); }
+    function renderEmpty(){ state.selected=''; clearInterval(state.polling); $('main').innerHTML='<div class="empty"><div><strong>当前工作区暂无项目</strong><br>可从左侧创建第一个短视频项目</div></div>'; }
+    async function loadProject(id){
+      state.selected=id; renderProjects();
+      try{ const result=await call('short.video.project.get',{workspace_root:state.workspace,project_id:id}); renderDetail(result); schedulePoll(result.jobs||[]); }catch(error){showError(error)}
+    }
+    function renderDetail(result){
+      const p=result.project,jobs=result.jobs||[],artifacts=result.artifacts||[],recipe=p.recipe||{};
+      $('main').innerHTML='<div class="detail"><header class="detail-head"><div><h1>'+esc(p.name)+'</h1><div class="sub">'+esc(p.description||'短视频项目')+'</div></div><div class="actions"><button id="preview">生成预览</button><button id="render" class="primary">构建视频</button><button id="refresh">刷新</button></div></header><div class="content">'+
+      '<div class="summary"><div><span>模板</span><strong>'+esc(p.template_id)+'</strong></div><div><span>风格</span><strong>'+esc(p.style_id)+'</strong></div><div><span>渲染引擎</span><strong>'+esc(recipe.adapter||'remotion')+'</strong></div><div><span>更新时间</span><strong>'+esc(date(p.updated_at))+'</strong></div></div>'+
+      '<section><h2>最近任务</h2>'+(jobs.length?jobs.slice(0,8).map(renderJob).join(''):'<div class="notice">尚未生成预览或视频</div>')+'</section>'+
+      '<section><h2>产物</h2>'+(artifacts.length?artifacts.map(renderArtifact).join(''):'<div class="notice">完成预览或构建后，产物会显示在这里</div>')+'</section></div></div>';
+      $('preview').addEventListener('click',()=>runAction('short.video.preview.start'));
+      $('render').addEventListener('click',()=>runAction('short.video.render.start'));
+      $('refresh').addEventListener('click',()=>loadProject(p.id));
+      document.querySelectorAll('[data-open]').forEach(node=>node.addEventListener('click',()=>openArtifact(node.dataset.open,node.dataset.mode)));
+    }
+    function renderJob(job){ return '<div class="job"><strong class="state '+esc(job.status)+'">'+esc(statusLabel(job.status))+'</strong><div><div class="job-msg">'+esc(job.message||job.stage)+'</div><div class="progress"><i style="width:'+Math.max(0,Math.min(100,job.progress||0))+'%"></i></div></div><span>'+esc(job.progress||0)+'%</span></div>'; }
+    function renderArtifact(item){ return '<div class="artifact"><div><strong>'+esc(item.kind==='video/mp4'?'视频成片':'故事板预览')+'</strong><span>'+esc(size(item.size))+' · '+esc(date(item.created_at))+' · '+esc(item.renderer||'storyboard')+'</span></div><div class="artifact-actions"><button data-open="'+esc(item.artifact_id)+'" data-mode="file">打开</button><button data-open="'+esc(item.artifact_id)+'" data-mode="folder">目录</button></div></div>'; }
+    async function runAction(capability){ setBusy(true); try{ const result=await call(capability,{workspace_root:state.workspace,project_id:state.selected}); if(result.state==='blocked') throw new Error((result.blockers||[]).map(x=>x.message).join('；')||'操作受阻'); await loadProject(state.selected); }catch(error){showError(error)}finally{setBusy(false)} }
+    async function openArtifact(id,mode){ try{ await call('short.video.artifact.open',{workspace_root:state.workspace,artifact_id:id,mode}); }catch(error){showError(error)} }
+    function schedulePoll(jobs){ clearInterval(state.polling); if(jobs.some(j=>['queued','preparing','rendering','running'].includes(j.status))) state.polling=setInterval(()=>loadProject(state.selected),1800); }
+    $('load').addEventListener('click',()=>loadWorkspace()); $('workspace').addEventListener('keydown',event=>{if(event.key==='Enter')loadWorkspace()});
+    $('create').addEventListener('click',async()=>{ const name=$('newName').value.trim(); if(!name)return; setBusy(true); try{ const result=await call('short.video.project.create',{workspace_root:state.workspace,name,template_id:$('template').value,style_id:$('style').value}); state.selected=result.project.id; $('newName').value=''; await loadWorkspace(false); }catch(error){showError(error)}finally{setBusy(false)} });
+    $('workspace').value=state.workspace; if(state.workspace) loadWorkspace();
+  </script>
+</body>
+</html>

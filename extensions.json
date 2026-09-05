@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "name": "himind-short-video",
+  "display_name": "HiMind 短视频创作扩展源",
+  "distribution": {
+    "source": "github",
+    "default_mode": "independent",
+    "update_policy": "explicit",
+    "dashboard_required": false
+  },
+  "repository": "https://github.com/MrBaoquan/himind-short-video",
+  "default_branch": "main",
+  "extensions": [
+    {
+      "type": "plugin",
+      "id": "com.himind.short-video-creation",
+      "path": "plugins/com.himind.short-video-creation/short-video-creation"
+    },
+    {
+      "type": "skill",
+      "id": "com.himind.short-video.creator",
+      "path": "skills/video-creator"
+    },
+    {
+      "type": "skill",
+      "id": "com.himind.short-video.style-curator",
+      "path": "skills/video-style-curator"
+    }
+  ]
+}

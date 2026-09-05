@@ -1,0 +1,4 @@
+[
+  {"id": "remotion", "preview": true, "render": true, "status": "built_in", "description": "内置主渲染引擎，按固定版本准备运行时并在后台生成 MP4。"},
+  {"id": "hyperframes", "preview": true, "render": true, "status": "external", "description": "与 Remotion 同级的可插拔渲染引擎，通过 Renderer Adapter 协议接入。"}
+]

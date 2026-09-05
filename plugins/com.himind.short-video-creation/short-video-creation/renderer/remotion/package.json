@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.521",
+    "remotion": "4.0.521",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  }
+}

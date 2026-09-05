@@ -1,0 +1,4 @@
+interface:
+  display_name: "短视频风格沉淀助手"
+  short_description: "把反馈沉淀为模板与风格规则"
+  default_prompt: "使用 $video-style-curator，读取反馈，保存可复用模板变体或 Style Pack 候选，并完成预览与质量检查。"

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "source_id": "",
+  "generation": "initial",
+  "plugins": [],
+  "skills": [],
+  "feature_packs": [
+    {
+      "id": "com.himind.feature.short-video-creation",
+      "name": "短视频创作",
+      "plugin_ids": [
+        "com.himind.short-video-creation"
+      ],
+      "skill_ids": [
+        "com.himind.short-video.creator",
+        "com.himind.short-video.style-curator"
+      ]
+    }
+  ]
+}

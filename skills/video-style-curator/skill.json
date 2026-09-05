@@ -1,0 +1,29 @@
+{
+  "id": "com.himind.short-video.style-curator",
+  "name": "短视频风格沉淀助手",
+  "author": "马宝全",
+  "categories": ["video-post", "visual-design", "testing-quality"],
+  "version": "0.3.1",
+  "scope": "user",
+  "description": "从短视频预览反馈中提取可复用的模板变体、风格规则和质量门禁，推动风格资产持续演进。",
+  "release_notes": "对齐 Remotion 主渲染架构，补充真实成片复核和浏览器复用后的稳定性证据，让模板与风格候选继续经过结构预览和最终视频验证。",
+  "min_agent_version": "0.3.40",
+  "supported_clients": ["agent-skills"],
+  "capabilities": [
+    {"id": "short.video.catalog.list", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.template.describe", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.style.describe", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.project.get", "required": true, "min_version": "0.3.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.recipe.validate", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.preview.start", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.feedback.record", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.feedback.list", "required": true, "min_version": "0.2.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.candidate.save", "required": true, "min_version": "0.2.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.candidate.list", "required": true, "min_version": "0.2.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.candidate.get", "required": true, "min_version": "0.2.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.quality.check", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"}
+  ],
+  "plugin_dependencies": [{"plugin_id": "com.himind.short-video-creation", "required": true, "min_version": "0.3.1"}],
+  "risk_summary": "读取项目反馈并生成沉淀建议；写入仅发生在调用方明确指定的工作区。",
+  "contents": ["skill.json", "SKILL.md", "agents/openai.yaml"]
+}

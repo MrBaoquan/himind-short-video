@@ -1,0 +1,50 @@
+[
+  {
+    "id": "leaderboard-tech",
+    "version": "1.0.0",
+    "family": "leaderboard",
+    "name": "排行榜 · 科技蓝",
+    "description": "适合数据排行、项目榜单和阶段性成果展示，通常只需替换数据和标题。",
+    "adapter": "remotion",
+    "composition": "LeaderboardTech",
+    "slots": ["title", "subtitle", "items", "logo", "voiceover"],
+    "compatible_styles": ["tech-blue", "minimal-white"],
+    "duration_seconds": 12
+  },
+  {
+    "id": "leaderboard-map-trend",
+    "version": "1.0.0",
+    "family": "leaderboard",
+    "name": "排行榜 · 地图趋势",
+    "description": "排行榜与地区标签、地图和趋势箭头组合，适合区域数据传播。",
+    "adapter": "remotion",
+    "composition": "LeaderboardMapTrend",
+    "slots": ["title", "items", "map_data", "trend", "voiceover"],
+    "compatible_styles": ["tech-blue"],
+    "duration_seconds": 15
+  },
+  {
+    "id": "photo-narrative",
+    "version": "1.0.0",
+    "family": "photo-narrative",
+    "name": "图片叙事",
+    "description": "图片、标题、旁白和字幕组成的节奏化故事模板。",
+    "adapter": "hyperframes",
+    "composition": "PhotoNarrative",
+    "slots": ["title", "subtitle", "media", "voiceover", "captions"],
+    "compatible_styles": ["tech-blue", "minimal-white"],
+    "duration_seconds": 20
+  },
+  {
+    "id": "gdp-map-story",
+    "version": "1.0.0",
+    "family": "map-story",
+    "name": "地图数据故事",
+    "description": "将地区数据映射到地图并配合标题、标注和趋势动画。",
+    "adapter": "remotion",
+    "composition": "GDPMapStory",
+    "slots": ["title", "map_data", "legend", "callouts", "voiceover"],
+    "compatible_styles": ["tech-blue"],
+    "duration_seconds": 18
+  }
+]

@@ -1,0 +1,16 @@
+# Build and validation output
+dist/
+test-output/
+*.signature.json
+
+# Plugin binaries are rebuilt before packaging
+plugins/**/bin/
+
+# Local Agent authoring state
+.extension-state/
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
