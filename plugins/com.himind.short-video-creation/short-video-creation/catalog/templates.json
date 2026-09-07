@@ -1,7 +1,7 @@
 [
   {
     "id": "leaderboard-tech",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "family": "leaderboard",
     "name": "排行榜 · 科技蓝",
     "description": "适合数据排行、项目榜单和阶段性成果展示，通常只需替换数据和标题。",

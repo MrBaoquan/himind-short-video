@@ -16,6 +16,7 @@ HiMind Agent 的独立短视频创作扩展源。通过 GitHub 分发，不依�
 - `skills/video-style-curator`：把反馈沉淀为模板变体、Style Pack 和质量规则。
 - `catalog/`：版本化模板、风格和 Renderer Adapter 声明。
 - `schemas/recipe.json`：Recipe 结构约束。
+- `dsh/agent-presets/himind-short-video/`：可选的 DSH“短视频创作”预设。只有安装本扩展源中的短视频插件或功能包后，Agent 才会把它同步到 DSH；未使用扩展源时不会出现在 DSH 预设列表。
 
 ## 创作闭环
 
@@ -59,5 +60,7 @@ go build -o bin/short-video-creation.exe .
 随后使用 HiMind Agent 的扩展开发 Capability 完成 `plugin.validate -> plugin.build -> plugin.package -> candidate.save -> extension.test`，Skill 使用对应的 validate/package/candidate/test 链。独立模式保留候选包，不把 Dashboard 提审当成本地创作前置条件。
 
 外部 AI 工具首次使用本仓库时，先调用 `extension.workspace.bind`，传入仓库根目录；再调用 `extension.workspace.current` 确认绑定结果。清除绑定使用 `extension.workspace.clear`。视频项目的 `workspace_root` 仍可指向任意项目目录，不要求放在扩展源内。GitHub 安装默认进入独立模式；连接 Dashboard 只增加组织审核、分发和调度，不改变本地协议。
+
+安装短视频插件后，Agent 会按目录中的 SHA-256 从同一 GitHub 版本读取 DSH 预设，写入当前 HiMind DSH 交互 Profile 的用户预设目录。预设复用 DSH 标准模式的完整工具集，仅增加模板选择、预览、反馈、质量检查和真实渲染的创作约束；卸载扩展不会删除用户自行创建的同名预设。
 
 发布新版本时必须先提升对应 Manifest 的语义版本并更新 `release_notes`，再完成 `validate -> build/package -> candidate.save -> extension.test`。通过后为每个制品创建独立 GitHub Release，并机械更新 `.himind/catalog.json`；同版本制品不得覆盖。

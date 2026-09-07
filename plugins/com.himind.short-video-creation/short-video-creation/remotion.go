@@ -194,7 +194,11 @@ func invokeRemotion(runtimeRoot, recipePath, outputPath, composition string) err
 	if strings.TrimSpace(composition) == "" {
 		composition = "LeaderboardTech"
 	}
-	args := []string{cli, "render", filepath.Join(runtimeRoot, "index.jsx"), composition, outputPath, "--props=" + recipePath, "--codec=h264", "--crf=18", "--concurrency=50%", "--log=error", "--overwrite"}
+	// A single browser page keeps local Agent renders deterministic. Multiple
+	// concurrent tabs can exceed Chrome's startup/render budget on first run
+	// and surface a misleading delayRender timeout even when the composition
+	// itself is valid.
+	args := []string{cli, "render", filepath.Join(runtimeRoot, "index.jsx"), composition, outputPath, "--props=" + recipePath, "--codec=h264", "--crf=18", "--concurrency=1", "--log=error", "--overwrite"}
 	if browserPath := findRemotionBrowser(); browserPath != "" {
 		args = append(args, "--browser-executable="+browserPath)
 	}

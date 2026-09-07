@@ -8,6 +8,7 @@ plugins/**/bin/
 
 # Local Agent authoring state
 .extension-state/
+.himind-video/
 
 # Editor and operating-system files
 .vscode/

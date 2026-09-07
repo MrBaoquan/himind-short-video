@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "source_id": "",
-  "generation": "7a2869c8ac4853fd8789921bc5fe91d2c9144499-catalog-view-metadata",
+  "generation": "himind-short-video-0.3.11-preset-20260907",
   "plugins": [
     {
       "allow_disable": true,
       "allow_uninstall": true,
-      "artifact_id": "github:plugin-com.himind.short-video-creation-v0.3.2:com.himind.short-video-creation-0.3.2.hmpkg",
+      "artifact_id": "github:plugin-com.himind.short-video-creation-v0.3.11:com.himind.short-video-creation-0.3.11.hmpkg",
       "assignment": "optional",
       "author_name": "马宝全",
       "capability_ids": [
@@ -17,6 +17,7 @@
         "short.video.template.list",
         "short.video.template.describe",
         "short.video.project.create",
+        "short.video.project.duplicate",
         "short.video.project.list",
         "short.video.project.get",
         "short.video.project.update",
@@ -45,9 +46,9 @@
       ],
       "channel": "stable",
       "description": "提供模板优先的短视频项目、故事板预览、Remotion 真实成片、反馈沉淀、质量检查和 HyperFrames 适配能力。",
-      "download_url": "https://github.com/MrBaoquan/himind-short-video/releases/download/plugin-com.himind.short-video-creation-v0.3.2/com.himind.short-video-creation-0.3.2.hmpkg",
-      "file_name": "com.himind.short-video-creation-0.3.2.hmpkg",
-      "file_size": 3534818,
+      "download_url": "https://github.com/MrBaoquan/himind-short-video/releases/download/plugin-com.himind.short-video-creation-v0.3.11/com.himind.short-video-creation-0.3.11.hmpkg",
+      "file_name": "com.himind.short-video-creation-0.3.11.hmpkg",
+      "file_size": 3571396,
       "governance": "optional",
       "install_mode": "prompt",
       "managed": false,
@@ -64,15 +65,15 @@
       ],
       "plugin_dependencies": [],
       "plugin_id": "com.himind.short-video-creation",
-      "published_at": "2026-09-05T20:58:10Z",
-      "release_notes": "优化短视频项目窗口的工作区栏和窄窗口布局，操作按钮保持稳定可读；统一多引擎创作文案，继续以 Remotion 为内置主引擎并保留 HyperFrames 同级适配协议。",
+      "published_at": "2026-09-07T00:00:00Z",
+      "release_notes": "新增模板优先的创作工作台：支持基于成熟项目二次创作、brief 持久化、数据替换、预览反馈、质量检查和真实 Remotion 构建；保留 HyperFrames 同级适配协议。",
       "review_status": "published",
-      "sha256": "c8999968cbb94fa940f2e8de71deb6d8f757e80234933b016d1afb7f8d460b7d",
-      "signature": "nHnzeleP6N96eTgTJ3Z/biBJJXDLrjuoxuFiq0EC/qiGQhN0hUP+LRyspC67nKFzi9uMw9Gq/6biYk6+634cjpfT3K66TCFYqXezW3f84bQ1pZp2yUGpwEsXFnCw7GeWywAzDjOblLL63xy/jF+dtCmAwHRrXgqwc/M4ApJWSMMg12vIVu96+xSpahcQ5s2O/n7AYFEJbZBpU61gfGFi3xsda76qQgEma6/Iyyurr4oKPe4akg+AxgPPR3Y0kaUZ04JcbqqoSZ9pEOIzkd3mDplxSBD9gm16Xy6OU2xb9RyZhvs3B1mEH3fpPIKZoyh/MC2ucUwvyZGHWHXDexx11XHE48+Iernt34N6hjb2/Kg7Sy4AiNUfJt5j9aRuAipkvOAKYJ2a+O3yQBBYrdoADAjFUVgt/+5luMxIRRMILpejrKTqMwpiCE6NAbsxUROv0bWQZonwDhPT3NOqEP2hU9dTo59+EEyvWMzqsMw2QB6S37F6Mk6H+OSJH1C2JtEW",
+      "sha256": "431be8f2b34cfbd1f54c3579932b2e061538e669c086a28752dd640e5b17cb25",
+      "signature": "C8N1/X+Dor63HScDTKB3t6vzPgF/oE0ryzFFIJ13TWZtnBv4Pf7SaBJibvKPTrIR7KgFqOatH2wcOQ8PCoT4hfGqSSi5mbLFB4a2oh7i6XS/j2rd7n9lQOA/lcCfZwJ5Invd0hWYIQGRrWNcr+72vo/V2JH9xl7n33MXRe+MW7j4pARHRPPb+xQ9fswOxR1NEO5xAEABuhVTsXxOcIflH4vL2mO2YcgITXhPxx9AakeGPuWajW77rwWVsKaMAWs5hyHvQk5A/aLTIp73kqb0J7MIJi2IrA7AZwI6HW5MXcSzJSKXxtSd1PBTzGwCfUl/8NPqraNxnk49PJJOIhKZ54/c7B43BdlRFb0vfUgGpDxw1kEIbG7KLvko0nYmiKpP70FBT0T7St03FMd2yKqn9Ok+22c46kORH4G16yVRPMnL2xhLUpWeClB6SMY9GZDzFC3EeAk4yjA6BqTje15eTtufzSctbDRpXs7vdEBD47ge5MXYzQyWcKUmAYbrGdUM",
       "signature_algorithm": "rsa-pss-sha256",
       "signature_key_id": "himind-production-2026",
       "source": "github",
-      "version": "0.3.2",
+      "version": "0.3.11",
       "view_count": 1
     }
   ],
@@ -80,7 +81,7 @@
     {
       "allow_disable": true,
       "allow_uninstall": true,
-      "artifact_id": "github:skill-com.himind.short-video.creator-v0.3.1:com.himind.short-video.creator-0.3.1.hmskill",
+      "artifact_id": "github:skill-com.himind.short-video.creator-v0.3.2:com.himind.short-video.creator-0.3.2.hmskill",
       "assignment": "optional",
       "author_name": "马宝全",
       "capability_ids": [
@@ -91,6 +92,7 @@
         "short.video.template.list",
         "short.video.template.describe",
         "short.video.project.create",
+        "short.video.project.duplicate",
         "short.video.project.list",
         "short.video.project.get",
         "short.video.project.update",
@@ -113,9 +115,9 @@
       ],
       "channel": "stable",
       "description": "把对话需求转成模板化短视频项目，沿用既有风格和模板，只替换数据与定制字段，完成预览、反馈迭代和构建。",
-      "download_url": "https://github.com/MrBaoquan/himind-short-video/releases/download/skill-com.himind.short-video.creator-v0.3.1/com.himind.short-video.creator-0.3.1.hmskill",
-      "file_name": "com.himind.short-video.creator-0.3.1.hmskill",
-      "file_size": 3901,
+      "download_url": "https://github.com/MrBaoquan/himind-short-video/releases/download/skill-com.himind.short-video.creator-v0.3.2/com.himind.short-video.creator-0.3.2.hmskill",
+      "file_name": "com.himind.short-video.creator-0.3.2.hmskill",
+      "file_size": 4119,
       "install_mode": "prompt",
       "managed": false,
       "management": "user_managed",
@@ -124,16 +126,16 @@
       "organization_reason": "",
       "plugin_dependencies": [
         {
-          "min_version": "0.3.1",
+          "min_version": "0.3.11",
           "plugin_id": "com.himind.short-video-creation",
           "required": true
         }
       ],
-      "published_at": "2026-09-05T20:58:15Z",
-      "release_notes": "补充 Remotion 浏览器复用与真实 MP4 验证流程，明确渲染任务完成判定；HyperFrames 继续保持同级适配协议。",
+      "published_at": "2026-09-07T00:00:00Z",
+      "release_notes": "新增基于成熟项目的二次创作流程，优先继承模板、风格、Recipe 和质量规则，只替换本次数据与 brief；继续完善 Remotion 预览和真实 MP4 验证。",
       "risk_summary": "创建项目、预览和构建会写入调用方指定目录；内置 Remotion 只执行固定版本和固定参数，不接受任意命令。",
-      "sha256": "297ae99af95a7ec142f8b1cf277c116f5d4393c3bc07e0d7a834048c893dce8a",
-      "signature": "cE+gRxPVJD2MgeO3Rz7ACqOcfF8icuI6aDReTwasYd9GofiHEqVCagb8iFqUYp+WATM54+rrvnPe90l2aXdh7o35biZMu88VakrBKvOfua/QfzWwpqYJcTPud0Leyn8fz6/n0x7z26vsDlNuqhvFGYhGON/hjHyTJ0JarTFTDn6K+Ej8ldU6WkyDPb38pAA7ppMKd2wJJUEiizjGUojG9fc7wsrkd7Giwwhz4bYIZmBvbtuH+0xGarjp6CmpEg8jIBMqeM81bKJu3SwQ16ydTe4uuf5Uuiw9YBm9qfUpKRGBg6+sX8M3b0/nwrbOBi+lKa+0gpSQJOFaqLiKnD5xE+tNC7GnvfhxOcJeHbGlDVo6I2DFIUV9W6V83tS9WGmJQZM+vkdbm/Xrz4uglrxKBGOP9z1z8NJetJnXq//tWSvsIqP9aP3IO2TQ0M1QwfiuIvsr6BxL5+TG254ZqFt6sxr21lkFblh0BPS6rQ5v2vGLTdjfJQ0fVoWJfot565oh",
+      "sha256": "b0008a47c0b5dcb3e0b5dc626a553941e4caa81f88c178e7e8e46e5a91fe7649",
+      "signature": "Ed/1zEy1cHOMeMNqo/fuuXebwGthZLtAHqYjJXd3PgUPo7QviJrwswHr2E0jXW/O5s8IRnTgd89WCQ1/X0C9L/DUFiMXHKYjqSrBnj7ENehj9fz7f2jp4mFh+ap5GYgDBgUssVuKPdhGMdG3F34hFGtUpATuLHAjkIgoigx/s4bw2W8Ul9Mp0cofyjigOQ94N0sxSmvmv6TZrms0n1K2IRWD3wECD4DNi2Gg6Yj6P3HSfEa7p6qjAP/CgBed/2Ns1XvVtjlth64vEd968RFmq6vsxNQXTr5oF17ZG8ttD+YdeHaljZatT4gJxOlIYuNIUXhfbhoZEgbx60/cWeWySs6dk+fhcLpaaozuJTayuMW7iUyGueVhx/PbSNaEBwk6OexfWi4j4jXNQRwq+7LDUhN01PajOi/4lwqQ9Bv3cG4Bpvh4n+fETuSCowb3ZsEbNTbH9unWg3d+YX2JjdTs8YgDZ30lou0DmrN99rA+q6quOofVKyIQkXrG/kIYDD+u",
       "signature_algorithm": "rsa-pss-sha256",
       "signature_key_id": "himind-production-2026",
       "skill_id": "com.himind.short-video.creator",
@@ -141,7 +143,7 @@
       "supported_clients": [
         "agent-skills"
       ],
-      "version": "0.3.1"
+      "version": "0.3.2"
     },
     {
       "allow_disable": true,
@@ -211,7 +213,20 @@
       "skill_ids": [
         "com.himind.short-video.creator",
         "com.himind.short-video.style-curator"
+      ],
+      "agent_preset_ids": [
+        "himind-short-video"
       ]
+    }
+  ],
+  "agent_presets": [
+    {
+      "preset_id": "himind-short-video",
+      "name": "短视频创作",
+      "description": "面向模板化短视频的对话创作模式，保留 DSH 完整工具集并提供预览、反馈、质量检查和真实构建闭环。",
+      "version": "0.1.0",
+      "path": "dsh/agent-presets/himind-short-video/agent.cordis.yml",
+      "sha256": "c83577586475ace0c490fb20abd120c330ebc034555ed290172ce5e43c94f0fb"
     }
   ]
 }

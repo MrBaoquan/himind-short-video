@@ -1,14 +1,14 @@
 [
   {
     "id": "tech-blue",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "name": "科技蓝",
     "description": "深色科技蓝底、青蓝强调和清晰数据层级，适合科技文旅与成果展示。",
-    "canvas": {"width": 1080, "height": 1920, "fps": 30},
-    "palette": {"background": "#09111f", "accent": "#4fc3f7", "text": "#eef5ff", "muted": "#9eb2cc"},
-    "typography": {"font_family": "Microsoft YaHei", "title_weight": 700, "title_size": 72, "body_size": 32},
-    "motion": {"entrance": "fade-up", "transition": "smooth", "duration_ms": 420},
-    "quality_rules": ["标题和字幕位于安全区内", "主色与背景对比度不低于 4.5:1", "数据变化使用短促但连续的动效"]
+    "canvas": {"width": 2160, "height": 3840, "fps": 30},
+    "palette": {"background": "#080c1a", "background_secondary": "#131b33", "accent": "#ff6b6b", "accent_secondary": "#4fc3f7", "text": "#ffffff", "muted": "#9eb2cc"},
+    "typography": {"font_family": "Microsoft YaHei", "title_weight": 800, "title_size": 142, "body_size": 54, "data_size": 64},
+    "motion": {"entrance": "spring-stagger", "transition": "gradient-line", "duration_ms": 520},
+    "quality_rules": ["使用 2160×3840 竖屏安全区", "标题、排名和底部信息不得越过安全区", "前三名使用奖牌式层级，其余条目保持一致行高", "数值、条形图和同比信息必须同步入场"]
   },
   {
     "id": "minimal-white",

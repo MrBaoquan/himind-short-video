@@ -3,10 +3,10 @@
   "name": "短视频创作助手",
   "author": "马宝全",
   "categories": ["video-post", "content-production", "visual-design"],
-  "version": "0.3.1",
+  "version": "0.3.2",
   "scope": "user",
   "description": "把对话需求转成模板化短视频项目，沿用既有风格和模板，只替换数据与定制字段，完成预览、反馈迭代和构建。",
-  "release_notes": "补充 Remotion 浏览器复用与真实 MP4 验证流程，明确渲染任务完成判定；HyperFrames 继续保持同级适配协议。",
+  "release_notes": "新增基于成熟项目的二次创作流程，优先继承模板、风格、Recipe 和质量规则，只替换本次数据与 brief；继续完善 Remotion 预览和真实 MP4 验证。",
   "min_agent_version": "0.3.40",
   "supported_clients": ["agent-skills"],
   "capabilities": [
@@ -17,6 +17,7 @@
     {"id": "short.video.template.list", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
     {"id": "short.video.template.describe", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
     {"id": "short.video.project.create", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
+    {"id": "short.video.project.duplicate", "required": true, "min_version": "0.3.11", "provider": "com.himind.short-video-creation"},
     {"id": "short.video.project.list", "required": true, "min_version": "0.2.0", "provider": "com.himind.short-video-creation"},
     {"id": "short.video.project.get", "required": true, "min_version": "0.2.0", "provider": "com.himind.short-video-creation"},
     {"id": "short.video.project.update", "required": true, "min_version": "0.2.0", "provider": "com.himind.short-video-creation"},
@@ -32,7 +33,7 @@
     {"id": "short.video.artifact.export", "required": true, "min_version": "0.1.0", "provider": "com.himind.short-video-creation"},
     {"id": "short.video.artifact.open", "required": true, "min_version": "0.3.0", "provider": "com.himind.short-video-creation"}
   ],
-  "plugin_dependencies": [{"plugin_id": "com.himind.short-video-creation", "required": true, "min_version": "0.3.1"}],
+  "plugin_dependencies": [{"plugin_id": "com.himind.short-video-creation", "required": true, "min_version": "0.3.11"}],
   "risk_summary": "创建项目、预览和构建会写入调用方指定目录；内置 Remotion 只执行固定版本和固定参数，不接受任意命令。",
   "contents": ["skill.json", "SKILL.md", "agents/openai.yaml"]
 }

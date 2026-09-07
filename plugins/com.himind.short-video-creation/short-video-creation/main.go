@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,10 +34,21 @@ type requestInput struct {
 	Name                string         `json:"name"`
 	Description         string         `json:"description"`
 	ExpectedUpdatedAt   string         `json:"expected_updated_at"`
+	CreativeBrief       string         `json:"creative_brief"`
+	SourceProjectID     string         `json:"source_project_id"`
+	SourceWorkspaceRoot string         `json:"source_workspace_root"`
 	TemplateID          string         `json:"template_id"`
 	StyleID             string         `json:"style_id"`
 	Family              string         `json:"family"`
 	Version             string         `json:"version"`
+	Title               string         `json:"title"`
+	Subtitle            string         `json:"subtitle"`
+	Unit                string         `json:"unit"`
+	Period              string         `json:"period"`
+	Source              string         `json:"source"`
+	Total               any            `json:"total"`
+	Average             any            `json:"average"`
+	Highlight           any            `json:"highlight"`
 	Recipe              map[string]any `json:"recipe"`
 	Data                map[string]any `json:"data"`
 	JobID               string         `json:"job_id"`
@@ -89,15 +101,19 @@ type videoTemplate struct {
 }
 
 type project struct {
-	ID          string         `json:"id"`
-	Name        string         `json:"name"`
-	Description string         `json:"description,omitempty"`
-	Template    string         `json:"template_id"`
-	Style       string         `json:"style_id"`
-	CreatedAt   string         `json:"created_at"`
-	UpdatedAt   string         `json:"updated_at"`
-	Revision    int            `json:"revision"`
-	Recipe      map[string]any `json:"recipe"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description,omitempty"`
+	CreativeBrief string `json:"creative_brief,omitempty"`
+	Template      string `json:"template_id"`
+	Style         string `json:"style_id"`
+	// WorkspaceRoot is response metadata populated by project.list. It is
+	// intentionally omitted from project.json so projects stay portable.
+	WorkspaceRoot string         `json:"workspace_root,omitempty"`
+	CreatedAt     string         `json:"created_at"`
+	UpdatedAt     string         `json:"updated_at"`
+	Revision      int            `json:"revision"`
+	Recipe        map[string]any `json:"recipe"`
 }
 
 type job struct {
@@ -184,6 +200,8 @@ func handle(request himindjsonrpc.Request) (any, *himindjsonrpc.Error) {
 		return templateDescribe(in)
 	case "short.video.project.create":
 		return projectCreate(in)
+	case "short.video.project.duplicate":
+		return projectDuplicate(in)
 	case "short.video.project.list":
 		return projectList(in)
 	case "short.video.project.get":
@@ -240,7 +258,7 @@ func catalogList(in requestInput) (any, *himindjsonrpc.Error) {
 		templates = filtered
 	}
 	return map[string]any{
-		"catalog_version": "1.0.0",
+		"catalog_version": "1.1.0",
 		"templates":       templates,
 		"styles":          styles,
 		"adapters":        adaptersWithRuntimeStatus(),
@@ -367,13 +385,21 @@ func projectCreate(in requestInput) (any, *himindjsonrpc.Error) {
 		return nil, himindjsonrpc.InvalidParams("project already exists; use its project_id")
 	}
 	recipe := defaultRecipe(in.TemplateID, in.StyleID, in.Data)
+	applyCreativeFields(recipe, in)
 	nowValue := now()
-	item := project{ID: id, Name: in.Name, Description: in.Description, Template: in.TemplateID, Style: in.StyleID, CreatedAt: nowValue, UpdatedAt: nowValue, Revision: 1, Recipe: recipe}
-	if err := writeJSON(filepath.Join(projectRoot, "project.json"), item); err != nil {
+	item := project{ID: id, Name: in.Name, Description: in.Description, CreativeBrief: strings.TrimSpace(in.CreativeBrief), Template: in.TemplateID, Style: in.StyleID, CreatedAt: nowValue, UpdatedAt: nowValue, Revision: 1, Recipe: recipe}
+	persisted := item
+	persisted.WorkspaceRoot = ""
+	if err := writeJSON(filepath.Join(projectRoot, "project.json"), persisted); err != nil {
 		return nil, himindjsonrpc.InternalError(err.Error())
 	}
 	if err := writeJSON(filepath.Join(projectRoot, "recipe.json"), recipe); err != nil {
 		return nil, himindjsonrpc.InternalError(err.Error())
+	}
+	if item.CreativeBrief != "" {
+		if err := os.WriteFile(filepath.Join(projectRoot, "brief.md"), []byte(item.CreativeBrief+"\n"), 0644); err != nil {
+			return nil, himindjsonrpc.InternalError(err.Error())
+		}
 	}
 	return map[string]any{
 		"project":        item,
@@ -383,31 +409,234 @@ func projectCreate(in requestInput) (any, *himindjsonrpc.Error) {
 	}, nil
 }
 
+// projectDuplicate creates a new project from a proven project/Recipe. It is
+// intentionally a capability rather than a UI-only shortcut so an AI tool can
+// repeat the same template-first production workflow without copying files.
+func projectDuplicate(in requestInput) (any, *himindjsonrpc.Error) {
+	targetRoot, err := workspace(in.WorkspaceRoot)
+	if err != nil {
+		return nil, himindjsonrpc.InvalidParams(err.Error())
+	}
+	if !idPattern.MatchString(in.SourceProjectID) {
+		return nil, himindjsonrpc.InvalidParams("source_project_id is required")
+	}
+	sourceRoot := targetRoot
+	if strings.TrimSpace(in.SourceWorkspaceRoot) != "" {
+		sourceRoot, err = workspace(in.SourceWorkspaceRoot)
+		if err != nil {
+			return nil, himindjsonrpc.InvalidParams(err.Error())
+		}
+	}
+	source, err := loadProject(sourceRoot, in.SourceProjectID)
+	if err != nil {
+		return nil, himindjsonrpc.InvalidParams(err.Error())
+	}
+	name := strings.TrimSpace(in.Name)
+	if name == "" {
+		name = source.Name + " 副本"
+	}
+	id := slug(name)
+	if id == "" || !idPattern.MatchString(id) {
+		id = source.ID + "-copy"
+	}
+	if id == source.ID && filepath.Clean(targetRoot) == filepath.Clean(sourceRoot) {
+		id = source.ID + "-copy"
+	}
+	if len(id) > 64 {
+		id = id[:64]
+	}
+	projectPath := filepath.Join(targetRoot, metadataDir, projectDir, id)
+	if _, statErr := os.Stat(projectPath); statErr == nil {
+		return nil, himindjsonrpc.InvalidParams("duplicated project already exists; choose another name")
+	}
+
+	templateID := source.Template
+	if strings.TrimSpace(in.TemplateID) != "" {
+		templateID = in.TemplateID
+	}
+	styleID := source.Style
+	if strings.TrimSpace(in.StyleID) != "" {
+		styleID = in.StyleID
+	}
+	templateItem, ok := findTemplate(templateID)
+	if !ok {
+		return nil, himindjsonrpc.InvalidParams("unknown template_id")
+	}
+	styleItem, ok := findStyle(styleID)
+	if !ok {
+		return nil, himindjsonrpc.InvalidParams("unknown style_id")
+	}
+	recipe, err := cloneMap(source.Recipe)
+	if err != nil {
+		return nil, himindjsonrpc.InternalError(err.Error())
+	}
+	// A template/style switch keeps editorial data but refreshes the renderer,
+	// canvas and immutable asset versions from the selected catalog entries.
+	base := defaultRecipe(templateID, styleID, nil)
+	recipe["template_id"] = templateID
+	recipe["template_version"] = templateItem.Version
+	recipe["style_id"] = styleID
+	recipe["style_version"] = styleItem.Version
+	if templateID != source.Template {
+		for _, key := range []string{"adapter", "duration_seconds"} {
+			recipe[key] = base[key]
+		}
+		if in.Data == nil {
+			recipe["data"] = base["data"]
+		}
+	}
+	if styleID != source.Style {
+		recipe["canvas"] = base["canvas"]
+		recipe["safe_area"] = base["safe_area"]
+	}
+	if in.Data != nil {
+		recipe["data"] = in.Data
+	}
+	applyCreativeFields(recipe, in)
+	brief := source.CreativeBrief
+	if strings.TrimSpace(in.CreativeBrief) != "" {
+		brief = strings.TrimSpace(in.CreativeBrief)
+	}
+	nowValue := now()
+	item := project{ID: id, Name: name, Description: source.Description, CreativeBrief: brief, Template: templateID, Style: styleID, CreatedAt: nowValue, UpdatedAt: nowValue, Revision: 1, Recipe: recipe}
+	if strings.TrimSpace(in.Description) != "" {
+		item.Description = in.Description
+	}
+	if err := writeJSON(filepath.Join(projectPath, "project.json"), item); err != nil {
+		return nil, himindjsonrpc.InternalError(err.Error())
+	}
+	if err := writeJSON(filepath.Join(projectPath, "recipe.json"), recipe); err != nil {
+		return nil, himindjsonrpc.InternalError(err.Error())
+	}
+	if brief != "" {
+		if err := os.WriteFile(filepath.Join(projectPath, "brief.md"), []byte(brief+"\n"), 0644); err != nil {
+			return nil, himindjsonrpc.InternalError(err.Error())
+		}
+	}
+	return map[string]any{
+		"project": item, "workspace_root": targetRoot, "project_path": projectPath,
+		"source_project_id": source.ID, "source_workspace_root": sourceRoot,
+		"next": []string{"调用 recipe.validate", "调用 preview.start", "根据反馈更新 Recipe 后再次预览", "调用 quality.check 和 render.start"},
+	}, nil
+}
+
+// applyCreativeFields keeps the project API ergonomic: callers can provide
+// common editorial fields without reconstructing the full versioned Recipe.
+// Advanced callers can still use project.update with an explicit Recipe.
+func applyCreativeFields(recipe map[string]any, in requestInput) {
+	for key, value := range map[string]any{
+		"title": in.Title, "subtitle": in.Subtitle, "unit": in.Unit,
+		"period": in.Period, "source": in.Source, "total": in.Total,
+		"average": in.Average, "highlight": in.Highlight,
+	} {
+		switch value := value.(type) {
+		case string:
+			if strings.TrimSpace(value) != "" {
+				recipe[key] = value
+			}
+		case nil:
+			continue
+		default:
+			recipe[key] = value
+		}
+	}
+}
+
 func projectList(in requestInput) (any, *himindjsonrpc.Error) {
 	root, err := workspace(in.WorkspaceRoot)
 	if err != nil {
 		return nil, himindjsonrpc.InvalidParams(err.Error())
 	}
-	projectsRoot := filepath.Join(root, metadataDir, projectDir)
-	entries, readErr := os.ReadDir(projectsRoot)
-	if readErr != nil && !os.IsNotExist(readErr) {
-		return nil, himindjsonrpc.InternalError(readErr.Error())
-	}
 	items := make([]project, 0)
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		var item project
-		if err := readJSON(filepath.Join(projectsRoot, entry.Name(), "project.json"), &item); err == nil {
-			if item.ID == "" {
-				item.ID = entry.Name()
+	projectRoots := discoverProjectRoots(root)
+	for _, projectRoot := range projectRoots {
+		entries, readErr := os.ReadDir(filepath.Join(projectRoot, metadataDir, projectDir))
+		if readErr != nil {
+			if os.IsNotExist(readErr) {
+				continue
 			}
-			items = append(items, item)
+			return nil, himindjsonrpc.InternalError(readErr.Error())
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			var item project
+			if err := readJSON(filepath.Join(projectRoot, metadataDir, projectDir, entry.Name(), "project.json"), &item); err == nil {
+				if item.ID == "" {
+					item.ID = entry.Name()
+				}
+				item.WorkspaceRoot = projectRoot
+				items = append(items, item)
+			}
 		}
 	}
-	sort.SliceStable(items, func(i, j int) bool { return items[i].UpdatedAt > items[j].UpdatedAt })
-	return map[string]any{"items": items, "total": len(items), "workspace_root": root}, nil
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].UpdatedAt > items[j].UpdatedAt ||
+			(items[i].UpdatedAt == items[j].UpdatedAt && (items[i].Name < items[j].Name ||
+				(items[i].Name == items[j].Name && (items[i].WorkspaceRoot < items[j].WorkspaceRoot ||
+					(items[i].WorkspaceRoot == items[j].WorkspaceRoot && items[i].ID < items[j].ID)))))
+	})
+	workspaceRoots := make([]string, 0, len(projectRoots))
+	for _, projectRoot := range projectRoots {
+		workspaceRoots = append(workspaceRoots, projectRoot)
+	}
+	return map[string]any{"items": items, "total": len(items), "workspace_root": root, "workspace_roots": workspaceRoots}, nil
+}
+
+const projectDiscoveryMaxDepth = 4
+
+var projectDiscoveryIgnoredDirs = map[string]bool{
+	".git":          true,
+	".himind-video": true,
+	".cache":        true,
+	".remotion":     true,
+	"node_modules":  true,
+	"dist":          true,
+	"target":        true,
+	"build":         true,
+	"out":           true,
+}
+
+// discoverProjectRoots supports aggregate extension repositories where a
+// project may live a few levels below the selected root (for example
+// test-output/style-review). The depth limit and generated-directory filter
+// keep project.list deterministic and cheap without searching the whole disk.
+func discoverProjectRoots(root string) []string {
+	absoluteRoot, err := filepath.Abs(root)
+	if err != nil {
+		absoluteRoot = root
+	}
+	roots := []string{absoluteRoot}
+	seen := map[string]bool{absoluteRoot: true}
+	var visit func(string, int)
+	visit = func(current string, depth int) {
+		if depth >= projectDiscoveryMaxDepth {
+			return
+		}
+		entries, readErr := os.ReadDir(current)
+		if readErr != nil {
+			return
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || projectDiscoveryIgnoredDirs[entry.Name()] {
+				continue
+			}
+			candidate := filepath.Join(current, entry.Name())
+			candidate, err = filepath.Abs(candidate)
+			if err != nil || seen[candidate] {
+				continue
+			}
+			seen[candidate] = true
+			if info, statErr := os.Stat(filepath.Join(candidate, metadataDir, projectDir)); statErr == nil && info.IsDir() {
+				roots = append(roots, candidate)
+			}
+			visit(candidate, depth+1)
+		}
+	}
+	visit(absoluteRoot, 0)
+	sort.Strings(roots[1:])
+	return roots
 }
 
 func projectGet(in requestInput) (any, *himindjsonrpc.Error) {
@@ -516,6 +745,9 @@ func projectUpdate(in requestInput) (any, *himindjsonrpc.Error) {
 	if in.Description != "" {
 		item.Description = in.Description
 	}
+	if strings.TrimSpace(in.CreativeBrief) != "" {
+		item.CreativeBrief = strings.TrimSpace(in.CreativeBrief)
+	}
 	if in.Recipe != nil {
 		issues := validateRecipe(in.Recipe, &item)
 		if len(issues) > 0 {
@@ -525,8 +757,8 @@ func projectUpdate(in requestInput) (any, *himindjsonrpc.Error) {
 		item.Template = asString(in.Recipe["template_id"])
 		item.Style = asString(in.Recipe["style_id"])
 	}
-	if in.Name == "" && in.Description == "" && in.Recipe == nil {
-		return nil, himindjsonrpc.InvalidParams("至少提供 name、description 或 recipe")
+	if in.Name == "" && in.Description == "" && in.CreativeBrief == "" && in.Recipe == nil {
+		return nil, himindjsonrpc.InvalidParams("至少提供 name、description、creative_brief 或 recipe")
 	}
 	item.Revision++
 	item.UpdatedAt = now()
@@ -536,6 +768,11 @@ func projectUpdate(in requestInput) (any, *himindjsonrpc.Error) {
 	}
 	if in.Recipe != nil {
 		if err := writeJSON(filepath.Join(projectPath, "recipe.json"), item.Recipe); err != nil {
+			return nil, himindjsonrpc.InternalError(err.Error())
+		}
+	}
+	if item.CreativeBrief != "" {
+		if err := os.WriteFile(filepath.Join(projectPath, "brief.md"), []byte(item.CreativeBrief+"\n"), 0644); err != nil {
 			return nil, himindjsonrpc.InternalError(err.Error())
 		}
 	}
@@ -936,14 +1173,18 @@ func renderComplete(in requestInput) (any, *himindjsonrpc.Error) {
 		return nil, himindjsonrpc.InvalidParams("artifact_kind must start with video/")
 	}
 	artifactID := newID("video-artifact")
-	artifactItem, err := makeArtifact(artifactID, kind, artifactPath, item.ProjectID, in.Renderer, true)
+	archivedPath, err := archiveVideoArtifact(root, artifactID, kind, artifactPath)
+	if err != nil {
+		return nil, himindjsonrpc.InternalError(err.Error())
+	}
+	artifactItem, err := makeArtifact(artifactID, kind, archivedPath, item.ProjectID, in.Renderer, true)
 	if err != nil {
 		return nil, himindjsonrpc.InternalError(err.Error())
 	}
 	item.Status = "completed"
 	item.Progress = 100
 	item.ArtifactID = artifactItem.ID
-	item.ArtifactPath = artifactPath
+	item.ArtifactPath = archivedPath
 	item.Message = "最终视频已生成"
 	item.UpdatedAt = now()
 	if err := writeJSON(jobPath, item); err != nil {
@@ -962,7 +1203,7 @@ func artifactExport(in requestInput) (any, *himindjsonrpc.Error) {
 	}
 	entries, _ := os.ReadDir(filepath.Join(root, metadataDir, artifactDir))
 	for _, entry := range entries {
-		if !strings.HasPrefix(entry.Name(), in.ArtifactID+".") {
+		if entry.IsDir() || strings.HasSuffix(entry.Name(), ".json") || !strings.HasPrefix(entry.Name(), in.ArtifactID+".") {
 			continue
 		}
 		path := filepath.Join(root, metadataDir, artifactDir, entry.Name())
@@ -1257,9 +1498,70 @@ func makeArtifact(id, kind, path, projectID, renderer string, ready bool) (artif
 	return item, nil
 }
 
+// archiveVideoArtifact gives every renderer the same durable artifact contract.
+// Adapters may write anywhere inside the selected workspace, but project.get,
+// export and open only index files under .himind-video/artifacts.
+func archiveVideoArtifact(root, artifactID, kind, sourcePath string) (string, error) {
+	artifactRoot := filepath.Join(root, metadataDir, artifactDir)
+	if err := os.MkdirAll(artifactRoot, 0755); err != nil {
+		return "", err
+	}
+	extension := strings.ToLower(filepath.Ext(sourcePath))
+	if extension == "" || strings.ContainsAny(extension, `/\\`) {
+		if kind == "video/webm" {
+			extension = ".webm"
+		} else {
+			extension = ".mp4"
+		}
+	}
+	destination := filepath.Join(artifactRoot, artifactID+extension)
+	sourceAbs, err := filepath.Abs(sourcePath)
+	if err != nil {
+		return "", err
+	}
+	destinationAbs, err := filepath.Abs(destination)
+	if err != nil {
+		return "", err
+	}
+	if sourceAbs != destinationAbs {
+		input, err := os.Open(sourceAbs)
+		if err != nil {
+			return "", err
+		}
+		defer input.Close()
+		output, err := os.Create(destinationAbs)
+		if err != nil {
+			return "", err
+		}
+		if _, err = io.Copy(output, input); err != nil {
+			_ = output.Close()
+			return "", err
+		}
+		if err = output.Close(); err != nil {
+			return "", err
+		}
+	}
+	return destinationAbs, nil
+}
+
 func defaultRecipe(templateID, styleID string, data map[string]any) map[string]any {
 	if data == nil {
 		switch item, ok := findTemplate(templateID); {
+		case ok && item.ID == "leaderboard-tech":
+			// Keep the first render useful and visually representative of the
+			// Video Flow baseline, even when the caller only supplies IDs.
+			data = map[string]any{"items": []any{
+				map[string]any{"name": "黄山风景区", "value": 3860, "sub_value": "+12.5%", "icon": "🏔️"},
+				map[string]any{"name": "九华山", "value": 2940, "sub_value": "+8.3%", "icon": "⛩️"},
+				map[string]any{"name": "天柱山", "value": 2510, "sub_value": "+15.2%", "icon": "🗻"},
+				map[string]any{"name": "西递宏村", "value": 2280, "sub_value": "+6.7%", "icon": "🏘️"},
+				map[string]any{"name": "三河古镇", "value": 1950, "sub_value": "+9.1%", "icon": "🏯"},
+				map[string]any{"name": "芜湖方特", "value": 1820, "sub_value": "+22.4%", "icon": "🎢"},
+				map[string]any{"name": "琅琊山", "value": 1560, "sub_value": "+4.8%", "icon": "🌿"},
+				map[string]any{"name": "万佛湖", "value": 1340, "sub_value": "+11.6%", "icon": "🌊"},
+				map[string]any{"name": "八里河", "value": 1180, "sub_value": "+7.2%", "icon": "🌸"},
+				map[string]any{"name": "太平湖", "value": 980, "sub_value": "+13.9%", "icon": "💧"},
+			}}
 		case ok && item.Family == "photo-narrative":
 			data = map[string]any{"media": []any{map[string]any{"kind": "placeholder", "label": "待添加图片"}}}
 		case ok && item.Family == "map-story":
@@ -1287,6 +1589,9 @@ func defaultRecipe(templateID, styleID string, data map[string]any) map[string]a
 		case "map-story":
 			title = "地图数据故事"
 		}
+		if templateID == "leaderboard-tech" {
+			title = "安徽省热门景区\n游客量排行榜"
+		}
 	}
 	if item, ok := findStyle(styleID); ok {
 		styleVersion = item.Version
@@ -1301,7 +1606,27 @@ func defaultRecipe(templateID, styleID string, data map[string]any) map[string]a
 		if fps == 0 {
 			fps = 30
 		}
-		return map[string]any{"template_id": templateID, "template_version": templateVersion, "style_id": styleID, "style_version": styleVersion, "adapter": adapter, "title": title, "subtitle": "基于已沉淀模板快速生成", "duration_seconds": duration, "canvas": map[string]any{"width": width, "height": height, "fps": fps}, "safe_area": map[string]any{"top": height / 20, "right": width / 15, "bottom": height / 10, "left": width / 15}, "data": data}
+		subtitle := "基于已沉淀模板快速生成"
+		if templateID == "leaderboard-tech" {
+			subtitle = "统计周期：2025年1月 - 2025年12月 · 单位：万人次"
+		}
+		safeArea := map[string]any{"top": height / 20, "right": width / 15, "bottom": height / 10, "left": width / 15}
+		if templateID == "leaderboard-tech" && styleID == "tech-blue" && width == 2160 && height == 3840 {
+			// These are the reference safe-area tokens used by Video Flow's
+			// DataRanking composition. Keeping them in the Recipe makes the
+			// baseline deterministic for both the UI and headless rendering.
+			safeArea = map[string]any{"top": 325, "right": 265, "bottom": 450, "left": 265}
+		}
+		recipe := map[string]any{"template_id": templateID, "template_version": templateVersion, "style_id": styleID, "style_version": styleVersion, "adapter": adapter, "title": title, "subtitle": subtitle, "duration_seconds": duration, "canvas": map[string]any{"width": width, "height": height, "fps": fps}, "safe_area": safeArea, "data": data}
+		if templateID == "leaderboard-tech" {
+			recipe["period"] = "2025年度"
+			recipe["unit"] = "万人次"
+			recipe["source"] = "数据来源：安徽省文化和旅游厅（示例数据）"
+			recipe["total"] = "2.04 亿"
+			recipe["average"] = "+11.2%"
+			recipe["highlight"] = "芜湖方特"
+		}
+		return recipe
 	}
 	return map[string]any{"template_id": templateID, "template_version": templateVersion, "style_id": styleID, "style_version": styleVersion, "adapter": adapter, "title": title, "subtitle": "基于已沉淀模板快速生成", "duration_seconds": duration, "canvas": map[string]any{"width": 1080, "height": 1920, "fps": 30}, "safe_area": map[string]any{"top": 96, "right": 72, "bottom": 180, "left": 72}, "data": data}
 }
@@ -1311,7 +1636,7 @@ func loadStyles() []style {
 	if err := readJSON(filepath.Join(pluginRoot(), "catalog", "styles.json"), &items); err == nil && len(items) > 0 {
 		return items
 	}
-	return []style{{ID: "tech-blue", Version: "1.0.0", Name: "科技蓝", Description: "深色底、蓝色强调、数据可视化和节奏清晰的科技文旅风格。", Canvas: map[string]any{"width": 1080, "height": 1920, "fps": 30}, Palette: map[string]any{"background": "#09111f", "accent": "#4fc3f7", "text": "#eef5ff"}, Typography: map[string]any{"font_family": "Microsoft YaHei", "title_weight": 700}, Motion: map[string]any{"entrance": "fade-up", "duration_ms": 420}, Quality: []string{"字幕位于安全区内", "主色对比度不低于 4.5:1"}}, {ID: "minimal-white", Version: "1.0.0", Name: "极简白", Description: "明亮留白、低噪声排版、突出数据和叙事。", Canvas: map[string]any{"width": 1080, "height": 1920, "fps": 30}, Palette: map[string]any{"background": "#f7f9fc", "accent": "#1769aa", "text": "#10233d"}, Typography: map[string]any{"font_family": "Microsoft YaHei", "title_weight": 700}, Motion: map[string]any{"entrance": "fade", "duration_ms": 360}, Quality: []string{"正文与背景有足够对比度", "保持四周留白"}}}
+	return []style{{ID: "tech-blue", Version: "1.1.0", Name: "科技蓝", Description: "深色科技蓝底、渐变强调和视频流式数据层级。", Canvas: map[string]any{"width": 2160, "height": 3840, "fps": 30}, Palette: map[string]any{"background": "#080c1a", "accent": "#ff6b6b", "accent_secondary": "#4fc3f7", "text": "#ffffff"}, Typography: map[string]any{"font_family": "Microsoft YaHei", "title_weight": 800}, Motion: map[string]any{"entrance": "spring-stagger", "duration_ms": 520}, Quality: []string{"使用 2160×3840 竖屏安全区", "前三名使用奖牌式层级"}}, {ID: "minimal-white", Version: "1.0.0", Name: "极简白", Description: "明亮留白、低噪声排版、突出数据和叙事。", Canvas: map[string]any{"width": 1080, "height": 1920, "fps": 30}, Palette: map[string]any{"background": "#f7f9fc", "accent": "#1769aa", "text": "#10233d"}, Typography: map[string]any{"font_family": "Microsoft YaHei", "title_weight": 700}, Motion: map[string]any{"entrance": "fade", "duration_ms": 360}, Quality: []string{"正文与背景有足够对比度", "保持四周留白"}}}
 }
 
 func loadTemplates() []videoTemplate {
@@ -1319,7 +1644,7 @@ func loadTemplates() []videoTemplate {
 	if err := readJSON(filepath.Join(pluginRoot(), "catalog", "templates.json"), &items); err == nil && len(items) > 0 {
 		return items
 	}
-	return []videoTemplate{{ID: "leaderboard-tech", Version: "1.0.0", Family: "leaderboard", Name: "排行榜 · 科技蓝", Description: "适合数据排行、项目榜单和阶段性成果展示。", Adapter: "remotion", Composition: "LeaderboardTech", Slots: []string{"title", "subtitle", "items", "logo", "voiceover"}, CompatibleStyle: []string{"tech-blue", "minimal-white"}, DurationSeconds: 12}, {ID: "leaderboard-map-trend", Version: "1.0.0", Family: "leaderboard", Name: "排行榜 · 地图趋势", Description: "排行榜与地图、地区标签和趋势箭头组合。", Adapter: "remotion", Composition: "LeaderboardMapTrend", Slots: []string{"title", "items", "map_data", "trend", "voiceover"}, CompatibleStyle: []string{"tech-blue"}, DurationSeconds: 15}, {ID: "photo-narrative", Version: "1.0.0", Family: "photo-narrative", Name: "图片叙事", Description: "图片、标题和旁白组成的节奏化故事模板。", Adapter: "hyperframes", Composition: "PhotoNarrative", Slots: []string{"title", "subtitle", "media", "voiceover", "captions"}, CompatibleStyle: []string{"tech-blue", "minimal-white"}, DurationSeconds: 20}}
+	return []videoTemplate{{ID: "leaderboard-tech", Version: "1.1.0", Family: "leaderboard", Name: "排行榜 · 科技蓝", Description: "参考 Video Flow 数据排行榜结构的可复用 Remotion 模板。", Adapter: "remotion", Composition: "LeaderboardTech", Slots: []string{"title", "subtitle", "items", "logo", "voiceover"}, CompatibleStyle: []string{"tech-blue", "minimal-white"}, DurationSeconds: 12}, {ID: "leaderboard-map-trend", Version: "1.0.0", Family: "leaderboard", Name: "排行榜 · 地图趋势", Description: "排行榜与地图、地区标签和趋势箭头组合。", Adapter: "remotion", Composition: "LeaderboardMapTrend", Slots: []string{"title", "items", "map_data", "trend", "voiceover"}, CompatibleStyle: []string{"tech-blue"}, DurationSeconds: 15}, {ID: "photo-narrative", Version: "1.0.0", Family: "photo-narrative", Name: "图片叙事", Description: "图片、标题和旁白组成的节奏化故事模板。", Adapter: "hyperframes", Composition: "PhotoNarrative", Slots: []string{"title", "subtitle", "media", "voiceover", "captions"}, CompatibleStyle: []string{"tech-blue", "minimal-white"}, DurationSeconds: 20}}
 }
 
 func loadAdapters() []map[string]any {
@@ -1509,6 +1834,18 @@ func asString(value any) string {
 		return strings.TrimSpace(text)
 	}
 	return fmt.Sprint(value)
+}
+
+func cloneMap(input map[string]any) (map[string]any, error) {
+	data, err := json.Marshal(input)
+	if err != nil {
+		return nil, err
+	}
+	var output map[string]any
+	if err := json.Unmarshal(data, &output); err != nil {
+		return nil, err
+	}
+	return output, nil
 }
 func numberValue(value any) int {
 	switch number := value.(type) {

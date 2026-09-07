@@ -1,4 +1,4 @@
 interface:
   display_name: "短视频创作助手"
   short_description: "按模板完成短视频预览与构建"
-  default_prompt: "使用 $video-creator，从模板选择开始，完成项目创建、Recipe 保存、预览、反馈迭代和构建。"
+  default_prompt: "使用 $video-creator，优先从已有项目二次创作并替换数据；没有基线时选择模板创建，完成 Recipe 保存、预览、反馈迭代和构建。"
