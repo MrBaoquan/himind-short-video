@@ -1,12 +1,46 @@
 package main
 
 import (
+	"encoding/json"
 	"himind-plugin/short-video-creation/internal/himindjsonrpc"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestManifestKeepsShortVideoIndependent(t *testing.T) {
+	content, err := os.ReadFile("plugin.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest struct {
+		Capabilities []struct {
+			ID           string `json:"id"`
+			Availability string `json:"availability"`
+		} `json:"capabilities"`
+		Permissions []string `json:"permissions"`
+	}
+	if err := json.Unmarshal(content, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.Capabilities) == 0 {
+		t.Fatal("short-video manifest must expose capabilities")
+	}
+	for _, capability := range manifest.Capabilities {
+		if !strings.HasPrefix(capability.ID, "short.video.") {
+			t.Fatalf("unexpected capability namespace: %s", capability.ID)
+		}
+		if capability.Availability != "local" {
+			t.Fatalf("%s must remain local-only, got %q", capability.ID, capability.Availability)
+		}
+	}
+	for _, permission := range manifest.Permissions {
+		if permission == "network.dashboard.public" {
+			t.Fatal("short-video plugin must not request Dashboard network access")
+		}
+	}
+}
 
 func TestShortVideoCreationLoop(t *testing.T) {
 	workspace := t.TempDir()
@@ -342,6 +376,11 @@ func TestProjectListUIUsesWorkspaceAwareProjectIdentity(t *testing.T) {
 		"const projectKey = project => projectRoot(project)+'|'+project.id",
 		"loadProject({id:state.selected,workspace_root:state.selectedWorkspace})",
 		"当前目录及子目录暂无项目",
+		"native('get_plugin_view_context')",
+		"native('pick_workspace_directory')",
+		"const recent=String(localStorage.getItem('himind-short-video-workspace')||'').trim()",
+		"if(changed){state.selected='';state.selectedWorkspace='';state.detail=null",
+		"async function bootstrap(){render();",
 	} {
 		if !strings.Contains(source, fragment) {
 			t.Fatalf("project manager UI lost workspace-aware behavior: %q", fragment)

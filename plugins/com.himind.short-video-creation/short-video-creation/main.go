@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -240,6 +241,8 @@ func handle(request himindjsonrpc.Request) (any, *himindjsonrpc.Error) {
 		return artifactExport(in)
 	case "short.video.artifact.open":
 		return artifactOpen(in)
+	case "short.video.artifact.read":
+		return artifactRead(in)
 	default:
 		return nil, himindjsonrpc.InvalidParams("unsupported short video capability")
 	}
@@ -1285,6 +1288,72 @@ func artifactOpen(in requestInput) (any, *himindjsonrpc.Error) {
 		}, nil
 	}
 	return map[string]any{"opened": true, "mode": mode, "artifact": item, "path": artifactPath}, nil
+}
+
+// artifactRead returns artifact content as base64 for inline preview/playback.
+// Videos are streamed as a Blob URL on the web side, so keep a size cap to
+// avoid moving unbounded payloads over the JSON-RPC pipe.
+func artifactRead(in requestInput) (any, *himindjsonrpc.Error) {
+	root, err := workspace(in.WorkspaceRoot)
+	if err != nil {
+		return nil, himindjsonrpc.InvalidParams(err.Error())
+	}
+	if !idPattern.MatchString(in.ArtifactID) {
+		return nil, himindjsonrpc.InvalidParams("artifact_id is required")
+	}
+	var item artifact
+	entries, readErr := os.ReadDir(filepath.Join(root, metadataDir, artifactDir))
+	if readErr != nil {
+		return nil, himindjsonrpc.InvalidParams("artifact not found")
+	}
+	found := false
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		var candidateItem artifact
+		if readJSON(filepath.Join(root, metadataDir, artifactDir, entry.Name()), &candidateItem) == nil && candidateItem.ID == in.ArtifactID {
+			item = candidateItem
+			found = true
+			break
+		}
+	}
+	if !found || !item.Ready {
+		return nil, himindjsonrpc.InvalidParams("artifact not found or not ready")
+	}
+	artifactPath, err := workspaceFile(root, item.Path)
+	if err != nil {
+		return map[string]any{
+			"state":     "blocked",
+			"blockers":  []map[string]any{issue("artifact_outside_workspace", "artifact", err.Error(), "只能读取当前工作区内已登记的产物")},
+			"retryable": false,
+		}, nil
+	}
+	info, statErr := os.Stat(artifactPath)
+	if statErr != nil || info.IsDir() {
+		return nil, himindjsonrpc.InvalidParams("artifact file is missing")
+	}
+	const maxInlineBytes = 64 << 20
+	if info.Size() > maxInlineBytes {
+		return map[string]any{
+			"state":     "blocked",
+			"blockers":  []map[string]any{issue("artifact_too_large", "artifact", "产物超过 64MB，无法内嵌播放", "使用 artifact.open 在系统应用中打开")},
+			"retryable": false,
+		}, nil
+	}
+	content, readErr := os.ReadFile(artifactPath)
+	if readErr != nil {
+		return map[string]any{
+			"state":     "blocked",
+			"blockers":  []map[string]any{issue("artifact_read_failed", "artifact", "产物读取失败", "重试或使用 artifact.open 打开")},
+			"retryable": true,
+		}, nil
+	}
+	return map[string]any{
+		"artifact": item,
+		"size":     info.Size(),
+		"base64":   base64.StdEncoding.EncodeToString(content),
+	}, nil
 }
 
 func resolveRecipe(root string, in requestInput) (map[string]any, *project, error) {

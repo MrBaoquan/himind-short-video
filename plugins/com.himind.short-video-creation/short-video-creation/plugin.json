@@ -4,8 +4,8 @@
   "author": "马宝全",
   "categories": ["video-post", "visual-design", "content-production", "testing-quality"],
   "description": "提供模板优先的短视频项目、故事板预览、Remotion 真实成片、反馈沉淀、质量检查和 HyperFrames 适配能力。",
-  "release_notes": "新增模板优先的创作工作台：项目支持 creative_brief 持久化与 project.duplicate 基于成熟项目快速二创；UI 串联模板选择、HiMind AI 对话入口、数据编辑、故事板预览、反馈和模板候选沉淀；保留聚合仓库递归发现、Video Flow 排行榜基准、Remotion 与 HyperFrames 适配和跨工作区项目绑定。",
-  "version": "0.3.11",
+  "release_notes": "接入 Agent 快捷工具入口：启用后可从主界面一键打开短视频工作台；保留原有项目工作区上下文和独立模式行为。",
+  "version": "0.3.13",
   "entry": "bin/short-video-creation.exe",
   "runtime": "process-jsonrpc-stdio",
   "platforms": ["windows-x64"],
@@ -39,8 +39,9 @@
     {"id": "short.video.render.cancel", "description": "取消尚未完成的最终视频渲染 Job。", "input_schema": {"type": "object", "properties": {"workspace_root": {"type": "string"}, "job_id": {"type": "string"}}, "required": ["workspace_root", "job_id"], "additionalProperties": false}, "risk_level": "local_write", "availability": "local"},
     {"id": "short.video.render.complete", "description": "由外部 Renderer Adapter 回写渲染结果并登记视频 Artifact。", "input_schema": {"type": "object", "properties": {"workspace_root": {"type": "string"}, "job_id": {"type": "string"}, "status": {"type": "string", "enum": ["completed", "failed"]}, "artifact_path": {"type": "string"}, "artifact_kind": {"type": "string"}, "renderer": {"type": "string"}, "message": {"type": "string"}}, "required": ["workspace_root", "job_id", "status"], "additionalProperties": false}, "risk_level": "local_write", "availability": "local"},
     {"id": "short.video.artifact.export", "description": "按 Artifact ID 返回已生成预览或视频产物的路径、大小和 SHA-256。", "input_schema": {"type": "object", "properties": {"workspace_root": {"type": "string"}, "artifact_id": {"type": "string"}}, "required": ["workspace_root", "artifact_id"], "additionalProperties": false}, "risk_level": "read_only", "availability": "local"},
-    {"id": "short.video.artifact.open", "description": "用系统应用打开工作区内已登记的预览、视频或所在目录。", "input_schema": {"type": "object", "properties": {"workspace_root": {"type": "string"}, "artifact_id": {"type": "string"}, "mode": {"type": "string", "enum": ["file", "folder"]}}, "required": ["workspace_root", "artifact_id"], "additionalProperties": false}, "risk_level": "local_write", "availability": "local"}
+    {"id": "short.video.artifact.open", "description": "用系统应用打开工作区内已登记的预览、视频或所在目录。", "input_schema": {"type": "object", "properties": {"workspace_root": {"type": "string"}, "artifact_id": {"type": "string"}, "mode": {"type": "string", "enum": ["file", "folder"]}}, "required": ["workspace_root", "artifact_id"], "additionalProperties": false}, "risk_level": "local_write", "availability": "local"},
+    {"id": "short.video.artifact.read", "description": "读取工作区内已登记预览或视频产物的内容（base64，用于工作台内嵌预览与播放，64MB 上限）。", "input_schema": {"type": "object", "properties": {"workspace_root": {"type": "string"}, "artifact_id": {"type": "string"}}, "required": ["workspace_root", "artifact_id"], "additionalProperties": false}, "risk_level": "read_only", "availability": "local"}
   ],
   "permissions": ["filesystem.workspace.read", "filesystem.workspace.write", "process.node", "network.package-registry", "process.system-open"],
-  "contributes": {"commands": [{"id": "short.video.project.create", "title": "创建短视频项目"}, {"id": "short.video.project.duplicate", "title": "基于模板二次创作"}, {"id": "short.video.project.update", "title": "保存短视频 Recipe"}, {"id": "short.video.preview.start", "title": "生成短视频预览"}, {"id": "short.video.render.start", "title": "构建最终视频"}, {"id": "short.video.candidate.save", "title": "保存风格候选"}], "views": [{"id": "short-video-projects", "title": "短视频项目", "location": "plugin_navigation", "entry": "ui/index.html"}]}
+  "contributes": {"commands": [{"id": "short.video.project.create", "title": "创建短视频项目"}, {"id": "short.video.project.duplicate", "title": "基于模板二次创作"}, {"id": "short.video.project.update", "title": "保存短视频 Recipe"}, {"id": "short.video.preview.start", "title": "生成短视频预览"}, {"id": "short.video.render.start", "title": "构建最终视频"}, {"id": "short.video.candidate.save", "title": "保存风格候选"}], "views": [{"id": "short-video-projects", "title": "短视频项目", "short_title": "短视频", "icon": "video", "quick_access": true, "order": 10, "location": "plugin_navigation", "entry": "ui/index.html"}]}
 }
