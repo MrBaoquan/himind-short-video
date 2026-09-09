@@ -21,23 +21,30 @@ function PlayerApp() {
   const spec = useMemo(resolveSpec, []);
   const canvas = (spec && spec.canvas) || {};
   const fps = clamp(canvas.fps || 30, 1, 60);
+  const width = clamp(canvas.width || 1080, 240, 4096);
+  const height = clamp(canvas.height || 1920, 240, 4096);
   const duration = Math.max(1, Math.round(clamp((spec && spec.duration_seconds) || 12, 1, 300) * fps));
   const component = (spec && spec.composition === 'GDPMapStory') || (spec && spec.composition === 'LeaderboardMapTrend')
     ? MapStory
     : LeaderboardTech;
   return (
-    <div style={{width: '100vw', height: '100vh', background: '#0a0f1f'}}>
+    <div style={{width: '100%', height: '100%', background: '#0a0f1f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'}}>
       <Player
         component={component}
         inputProps={spec || {}}
         durationInFrames={duration}
-        compositionWidth={clamp(canvas.width || 1080, 240, 4096)}
-        compositionHeight={clamp(canvas.height || 1920, 240, 4096)}
+        compositionWidth={width}
+        compositionHeight={height}
         fps={fps}
         style={{width: '100%', height: '100%'}}
         controls
         loop
         autoPlay
+        doubleClickToFullscreen
+        showVolumeControls
+        showPlaybackRateControl
+        acknowledgeRemotionLicense
+        theme={{accent: '#0b7d85'}}
       />
     </div>
   );
