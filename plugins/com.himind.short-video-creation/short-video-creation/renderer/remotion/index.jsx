@@ -150,3 +150,6 @@ const Root = () => <>
 </>;
 
 registerRoot(Root);
+
+export {LeaderboardTech, MapStory};
+

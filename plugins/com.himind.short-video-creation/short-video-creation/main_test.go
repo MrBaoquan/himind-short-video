@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"himind-plugin/short-video-creation/internal/himindjsonrpc"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -92,6 +93,96 @@ func TestShortVideoCreationLoop(t *testing.T) {
 	}
 	if !feedback.(map[string]any)["recorded"].(bool) {
 		t.Fatal("feedback was not recorded")
+	}
+}
+
+func TestPlayerSpecFromRecipeMapsRenderData(t *testing.T) {
+	spec := playerSpecFromRecipe(map[string]any{
+		"composition":      "LeaderboardTech",
+		"title":            "数据排行榜\n第二行",
+		"subtitle":         "副标题",
+		"period":           "2026",
+		"unit":             "分",
+		"source":           "来源",
+		"highlight":        "项目A",
+		"duration_seconds": 12,
+		"style_id":         "tech-blue",
+		"canvas":           map[string]any{"width": float64(540), "height": float64(960), "fps": float64(30)},
+		"safe_area":        map[string]any{"top": float64(90), "left": float64(72), "bottom": float64(160), "right": float64(72)},
+		"data": map[string]any{
+			"items": []any{map[string]any{"name": "A", "value": float64(96)}, map[string]any{"name": "B", "value": float64(82)}},
+		},
+	})
+	if spec["composition"] != "LeaderboardTech" {
+		t.Fatalf("composition not mapped: %#v", spec["composition"])
+	}
+	if spec["duration_seconds"] != 12 {
+		t.Fatalf("duration_seconds not mapped: %#v", spec["duration_seconds"])
+	}
+	items, ok := spec["items"].([]any)
+	if !ok || len(items) != 2 {
+		t.Fatalf("items not mapped: %#v", spec["items"])
+	}
+	if _, ok := spec["canvas"].(map[string]any); !ok {
+		t.Fatalf("canvas not mapped: %#v", spec["canvas"])
+	}
+}
+
+func TestPlayerSpecFallsBackToTemplateComposition(t *testing.T) {
+	spec := playerSpecFromRecipe(map[string]any{
+		"template_id":     "leaderboard-tech",
+		"duration_seconds": 12,
+		"style_id":        "tech-blue",
+		"data":            map[string]any{"items": []any{}},
+	})
+	if spec["composition"] != "LeaderboardTech" {
+		t.Fatalf("composition fallback failed: %#v", spec["composition"])
+	}
+	if _, ok := spec["canvas"].(map[string]any); ok {
+		t.Fatalf("canvas should be absent when recipe has none")
+	}
+}
+
+func TestPlayerPreviewProducesPlayableArtifact(t *testing.T) {
+	if _, err := exec.LookPath("node"); err != nil {
+		t.Skip("node is unavailable; skipping live player path")
+	}
+	if _, err := exec.LookPath("npm"); err != nil {
+		t.Skip("npm is unavailable; skipping live player path")
+	}
+	workspace := t.TempDir()
+	_, rpcError := handle(himindjsonrpc.Request{
+		Method: "short.video.project.create",
+		Params: []byte(`{"workspace_root":"` + filepath.ToSlash(workspace) + `","name":"player-demo","template_id":"leaderboard-tech","style_id":"tech-blue"}`),
+	})
+	if rpcError != nil {
+		t.Fatal(rpcError)
+	}
+	preview, rpcError := handle(himindjsonrpc.Request{
+		Method: "short.video.preview.player",
+		Params: []byte(`{"workspace_root":"` + filepath.ToSlash(workspace) + `","project_id":"player-demo"}`),
+	})
+	if rpcError != nil {
+		t.Fatal(rpcError)
+	}
+	previewMap := preview.(map[string]any)
+	if state := asString(previewMap["state"]); state == "blocked" {
+		t.Skipf("player runtime blocked on this machine: %v", previewMap["blockers"])
+	}
+	artifact := previewMap["artifact"].(artifact)
+	if !artifact.Ready || artifact.Kind != "preview/player" {
+		t.Fatalf("unexpected player artifact: %#v", artifact)
+	}
+	data, err := os.ReadFile(artifact.Path)
+	if err != nil {
+		t.Fatalf("player file missing: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "__PREVIEW_SPEC__") {
+		t.Fatalf("player preview missing __PREVIEW_SPEC__")
+	}
+	if len(content) < 100000 {
+		t.Fatalf("player bundle looks too small (%d bytes); esbuild likely did not inline remotion", len(content))
 	}
 }
 

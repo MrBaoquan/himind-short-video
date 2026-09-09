@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -213,6 +214,8 @@ func handle(request himindjsonrpc.Request) (any, *himindjsonrpc.Error) {
 		return recipeValidate(in)
 	case "short.video.preview.start":
 		return previewStart(in)
+	case "short.video.preview.player":
+		return previewPlayer(in)
 	case "short.video.preview.status":
 		return jobStatus(in, "preview")
 	case "short.video.preview.cancel":
@@ -797,6 +800,22 @@ func recipeValidate(in requestInput) (any, *himindjsonrpc.Error) {
 		result["project_id"] = item.ID
 	}
 	return result, nil
+}
+
+func previewPlayer(in requestInput) (any, *himindjsonrpc.Error) {
+	root, err := workspace(in.WorkspaceRoot)
+	if err != nil {
+		return nil, himindjsonrpc.InvalidParams(err.Error())
+	}
+	recipe, item, err := resolveRecipe(root, in)
+	if err != nil {
+		return nil, himindjsonrpc.InvalidParams(err.Error())
+	}
+	issues := validateRecipe(recipe, item)
+	if len(issues) > 0 {
+		return map[string]any{"state": "blocked", "blockers": issues, "next_steps": []string{"修复 Recipe 后重新调用 preview.player"}}, nil
+	}
+	return startPlayerPreview(root, item, recipe)
 }
 
 func previewStart(in requestInput) (any, *himindjsonrpc.Error) {
@@ -1903,6 +1922,16 @@ func asString(value any) string {
 		return strings.TrimSpace(text)
 	}
 	return fmt.Sprint(value)
+}
+
+func numberInt(value any) int {
+	return numberValue(value)
+}
+
+func escHTML(value string) string {
+	var buf bytes.Buffer
+	template.HTMLEscape(&buf, []byte(value))
+	return buf.String()
 }
 
 func cloneMap(input map[string]any) (map[string]any, error) {

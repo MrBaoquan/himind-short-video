@@ -158,7 +158,7 @@ func ensureRemotionRuntime(root string) error {
 	if err := os.MkdirAll(root, 0755); err != nil {
 		return err
 	}
-	for _, name := range []string{"package.json", "index.jsx"} {
+	for _, name := range []string{"package.json", "index.jsx", "player.jsx"} {
 		content, err := os.ReadFile(filepath.Join(pluginRoot(), "renderer", "remotion", name))
 		if err != nil {
 			return fmt.Errorf("读取 Remotion 资源 %s: %w", name, err)
